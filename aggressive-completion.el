@@ -6,7 +6,7 @@
 ;; Maintainer: Tassilo Horn <tsdh@gnu.org>
 ;; Keywords: minibuffer completion
 ;; Package-Requires: ((emacs "27.1"))
-;; Version: 1.0
+;; Version: 1.1
 
 ;; This file is part of GNU Emacs.
 
@@ -142,6 +142,8 @@ If nil, only show the completion help."
 (defalias 'aggressive-completion-switch-to-completions
   #'switch-to-completions)
 
+(declare-function icomplete-fido-backward-updir "icomplete" nil)
+
 (defvar aggressive-completion-minibuffer-map
   (let ((map (make-sparse-keymap)))
     (require 'icomplete)
@@ -169,6 +171,7 @@ If nil, only show the completion help."
     (add-hook 'post-command-hook
               #'aggressive-completion--timer-restart nil t)))
 
+;;;###autoload
 (define-minor-mode aggressive-completion-mode
   "Perform aggressive minibuffer completion."
   :lighter " ACmp"
