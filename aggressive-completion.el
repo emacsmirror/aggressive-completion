@@ -31,10 +31,8 @@
 ;; using the standard completion help (unless the number of possible
 ;; completions exceeds `aggressive-completion-max-shown-completions').
 ;;
-;; Automatic completion is temporarily disabled after all commands in
-;; `aggressive-completion-no-complete-commands'.  Basically all deletion/kill
-;; commands are listed here in order not to complete back to the thing you just
-;; deleted.
+;; Automatic completion is done after all commands in
+;; `aggressive-completion-auto-complete-commands'.
 ;;
 ;; Aggressive completion can be toggled using
 ;; `aggressive-completion-toggle-auto-complete' (bound to `M-t' by default)
@@ -70,13 +68,9 @@ If nil, only show the completion help."
   "Maximum number of possible completions for showing completion help."
   :type 'integer)
 
-(defcustom aggressive-completion-no-complete-commands
-  '( left-char icomplete-fido-backward-updir minibuffer-complete
-     right-char delete-backward-char backward-kill-word
-     backward-kill-paragraph backward-kill-sentence backward-kill-sexp
-     delete-char kill-word kill-line completion-at-point
-     move-beginning-of-line left-word)
-  "Commands after which automatic completion is not performed."
+(defcustom aggressive-completion-auto-complete-commands
+  '( self-insert-command yank)
+  "Commands after which automatic completion is performed."
   :type '(repeat command))
 
 (defvar aggressive-completion--timer nil)
@@ -98,19 +92,22 @@ If nil, only show the completion help."
           (cl-incf i))
         (if (and (> i 0)
                  (< i aggressive-completion-max-shown-completions))
-            (if (or (null aggressive-completion-auto-complete)
-                    (memq last-command
-                          aggressive-completion-no-complete-commands))
-                ;; This ensures we still can repeatedly hit TAB to scroll
-                ;; through the list of completions.
-                (unless (and (= last-command-event ?\t)
-                             (window-live-p
-                              (get-buffer-window "*Completions*"))
-                             (with-current-buffer "*Completions*"
-                               (> (point) (point-min))))
-                  (minibuffer-completion-help))
-              (minibuffer-complete)
-              (unless (window-live-p (get-buffer-window "*Completions*"))
+            (if (and aggressive-completion-auto-complete
+                     (memq last-command
+                           aggressive-completion-auto-complete-commands))
+                ;; Perform automatic completion.
+                (progn
+                  (minibuffer-complete)
+                  (unless (window-live-p (get-buffer-window "*Completions*"))
+                    (minibuffer-completion-help)))
+              ;; Only show the completion help.  This slightly awkward
+              ;; condition ensures we still can repeatedly hit TAB to scroll
+              ;; through the list of completions.
+              (unless (and (= last-command-event ?\t)
+                           (window-live-p
+                            (get-buffer-window "*Completions*"))
+                           (with-current-buffer "*Completions*"
+                             (> (point) (point-min))))
                 (minibuffer-completion-help)))
           ;; Close the *Completions* buffer if there are too many
           ;; or zero completions.
