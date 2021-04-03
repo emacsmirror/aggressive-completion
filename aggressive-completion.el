@@ -55,7 +55,7 @@
 
 (defgroup aggressive-completion nil
   "Aggressive completion completes for you."
-  :group 'completion)
+  :group 'minibuffer)
 
 (defcustom aggressive-completion-delay 0.3
   "Delay in seconds before aggressive completion kicks in."
@@ -74,7 +74,8 @@ If nil, only show the completion help."
   '( left-char icomplete-fido-backward-updir minibuffer-complete
      right-char delete-backward-char backward-kill-word
      backward-kill-paragraph backward-kill-sentence backward-kill-sexp
-     delete-char kill-word kill-line completion-at-point)
+     delete-char kill-word kill-line completion-at-point
+     move-beginning-of-line left-word)
   "Commands after which automatic completion is not performed."
   :type '(repeat command))
 
