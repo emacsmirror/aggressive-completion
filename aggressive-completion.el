@@ -6,7 +6,7 @@
 ;; Maintainer: Tassilo Horn <tsdh@gnu.org>
 ;; Keywords: minibuffer completion
 ;; Package-Requires: ((emacs "27.1"))
-;; Version: 1.1
+;; Version: 1.2
 
 ;; This file is part of GNU Emacs.
 
@@ -71,7 +71,7 @@ If nil, only show the completion help."
 (defcustom aggressive-completion-auto-complete-commands
   '( self-insert-command yank)
   "Commands after which automatic completion is performed."
-  :type '(repeat command))
+  :type '(repeat function))
 
 (defvar aggressive-completion--timer nil)
 
