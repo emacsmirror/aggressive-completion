@@ -6,7 +6,7 @@
 ;; Maintainer: Tassilo Horn <tsdh@gnu.org>
 ;; Keywords: minibuffer completion
 ;; Package-Requires: ((emacs "27.1"))
-;; Version: 1.2
+;; Version: 1.3
 
 ;; This file is part of GNU Emacs.
 
@@ -77,6 +77,7 @@ If nil, only show the completion help."
 
 (defun aggressive-completion--do ()
   "Perform aggressive completion."
+  (message "last-command: %S" last-command)
   (when (window-minibuffer-p)
     (let* ((completions (completion-all-sorted-completions))
            ;; Don't ding if there are no completions, etc.
@@ -103,7 +104,8 @@ If nil, only show the completion help."
               ;; Only show the completion help.  This slightly awkward
               ;; condition ensures we still can repeatedly hit TAB to scroll
               ;; through the list of completions.
-              (unless (and (= last-command-event ?\t)
+              (unless (and (memq last-command
+                                 '(completion-at-point minibuffer-complete))
                            (window-live-p
                             (get-buffer-window "*Completions*"))
                            (with-current-buffer "*Completions*"
