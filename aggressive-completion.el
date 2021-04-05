@@ -6,7 +6,7 @@
 ;; Maintainer: Tassilo Horn <tsdh@gnu.org>
 ;; Keywords: minibuffer completion
 ;; Package-Requires: ((emacs "27.1"))
-;; Version: 1.3
+;; Version: 1.4
 
 ;; This file is part of GNU Emacs.
 
@@ -77,7 +77,6 @@ If nil, only show the completion help."
 
 (defun aggressive-completion--do ()
   "Perform aggressive completion."
-  (message "last-command: %S" last-command)
   (when (window-minibuffer-p)
     (let* ((completions (completion-all-sorted-completions))
            ;; Don't ding if there are no completions, etc.
