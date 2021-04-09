@@ -27,12 +27,15 @@
 ;;
 ;; Aggressive completion mode (`aggressive-completion-mode') is a minor mode
 ;; which automatically completes for you after a short delay
-;; (`aggressive-completion-delay') and always shows all possible completions
-;; using the standard completion help (unless the number of possible
-;; completions exceeds `aggressive-completion-max-shown-completions').
+;; (`aggressive-completion-delay') and shows all possible completions using the
+;; standard completion help (unless the number of possible completions exceeds
+;; `aggressive-completion-max-shown-completions' or
+;; `aggressive-completion-auto-completion-help' is set to nil).
 ;;
 ;; Automatic completion is done after all commands in
-;; `aggressive-completion-auto-complete-commands'.
+;; `aggressive-completion-auto-complete-commands'.  The function doing
+;; auto-completion is defined by `aggressive-completion-auto-complete-fn' which
+;; defaults to `minibuffer-complete'.
 ;;
 ;; Aggressive completion can be toggled using
 ;; `aggressive-completion-toggle-auto-complete' (bound to `M-t' by default)
@@ -44,6 +47,22 @@
 ;; All keys bound to this command in `aggressive-completion-minibuffer-map'
 ;; will be bound to `other-window' in `completion-list-mode-map' so that those
 ;; keys act as switch-back-and-forth commands.
+;;
+;; Aggressive completion can be used together, in theory, with other completion
+;; UIs.  Using the following configuration, it works quite well with the
+;; vertico package:
+;;
+;; Disable completion help since vertico shows the candidates anyhow.
+;; (setq aggressive-completion-auto-completion-help nil)
+;;
+;; A command which just expands the common part without selecting a candidate.
+;; (defun th/vertico-complete ()
+;;   (interactive)
+;;   (minibuffer-complete)
+;;   (vertico--exhibit))
+;;
+;; Use that for auto-completion.
+;; (setq aggressive-completion-auto-complete-fn #'th/vertico-complete))
 
 ;;; Code:
 
@@ -76,6 +95,14 @@
   "Commands after which automatic completion is performed."
   :type '(repeat function))
 
+(defcustom aggressive-completion-auto-complete-fn
+  #'minibuffer-complete
+  "Function used to perform auto-completion.
+The default is `minibuffer-complete'.  The idea is that you can
+set it to some function of some alternative completion UI such as
+Ivy, Selectrum, or Vertico."
+  :type 'function)
+
 (defvar aggressive-completion--timer nil)
 
 (defun aggressive-completion--do ()
@@ -100,7 +127,9 @@
                            aggressive-completion-auto-complete-commands))
                 ;; Perform automatic completion.
                 (progn
-                  (minibuffer-complete)
+                  (let ((completion-auto-help
+                         aggressive-completion-auto-completion-help))
+                    (funcall aggressive-completion-auto-complete-fn))
                   (when (and aggressive-completion-auto-completion-help
                              (not (window-live-p
                                    (get-buffer-window "*Completions*"))))
@@ -109,22 +138,29 @@
               ;; condition ensures we still can repeatedly hit TAB to scroll
               ;; through the list of completions.
               (when (and aggressive-completion-auto-completion-help
-                         (not (and (memq last-command
-                                         '(completion-at-point
-                                           minibuffer-complete))
-                                   (window-live-p
-                                    (get-buffer-window "*Completions*"))
-                                   (with-current-buffer "*Completions*"
-                                     (> (point) (point-min))))))
+                         (not
+                          (and
+                           (memq last-command
+                                 (cons aggressive-completion-auto-complete-fn
+                                       '(completion-at-point
+                                         minibuffer-complete)))
+                           (window-live-p
+                            (get-buffer-window "*Completions*"))
+                           (with-current-buffer "*Completions*"
+                             (> (point) (point-min))))))
                 (minibuffer-completion-help)))
           ;; Close the *Completions* buffer if there are too many
           ;; or zero completions.
           (when-let ((win (get-buffer-window "*Completions*")))
             (when (and (window-live-p win)
+                       ;; When we've requested completion help via hitting TAB
+                       ;; twice explicitly, it shouldn't be closed forcefully
+                       ;; here.
                        (not (memq last-command
-                                  '(minibuffer-completion-help
-                                    minibuffer-complete
-                                    completion-at-point))))
+                                  (cons aggressive-completion-auto-complete-fn
+                                        '(minibuffer-completion-help
+                                          minibuffer-complete
+                                          completion-at-point)))))
               (quit-window nil win))))))))
 
 (defun aggressive-completion--timer-restart ()
