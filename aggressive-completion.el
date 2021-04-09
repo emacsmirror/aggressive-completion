@@ -62,7 +62,7 @@
 ;;   (vertico--exhibit))
 ;;
 ;; Use that for auto-completion.
-;; (setq aggressive-completion-auto-complete-fn #'th/vertico-complete))
+;; (setq aggressive-completion-auto-complete-fn #'th/vertico-complete)
 
 ;;; Code:
 
