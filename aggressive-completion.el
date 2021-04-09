@@ -60,8 +60,11 @@
   :type 'number)
 
 (defcustom aggressive-completion-auto-complete t
-  "Complete automatically if non-nil.
-If nil, only show the completion help."
+  "Complete automatically if non-nil."
+  :type 'boolean)
+
+(defcustom aggressive-completion-auto-completion-help t
+  "Show completion help automatically if non-nil."
   :type 'boolean)
 
 (defcustom aggressive-completion-max-shown-completions 1000
@@ -98,17 +101,21 @@ If nil, only show the completion help."
                 ;; Perform automatic completion.
                 (progn
                   (minibuffer-complete)
-                  (unless (window-live-p (get-buffer-window "*Completions*"))
+                  (when (and aggressive-completion-auto-completion-help
+                             (not (window-live-p
+                                   (get-buffer-window "*Completions*"))))
                     (minibuffer-completion-help)))
               ;; Only show the completion help.  This slightly awkward
               ;; condition ensures we still can repeatedly hit TAB to scroll
               ;; through the list of completions.
-              (unless (and (memq last-command
-                                 '(completion-at-point minibuffer-complete))
-                           (window-live-p
-                            (get-buffer-window "*Completions*"))
-                           (with-current-buffer "*Completions*"
-                             (> (point) (point-min))))
+              (when (and aggressive-completion-auto-completion-help
+                         (not (and (memq last-command
+                                         '(completion-at-point
+                                           minibuffer-complete))
+                                   (window-live-p
+                                    (get-buffer-window "*Completions*"))
+                                   (with-current-buffer "*Completions*"
+                                     (> (point) (point-min))))))
                 (minibuffer-completion-help)))
           ;; Close the *Completions* buffer if there are too many
           ;; or zero completions.
