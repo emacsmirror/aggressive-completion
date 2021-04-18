@@ -6,7 +6,7 @@
 ;; Maintainer: Tassilo Horn <tsdh@gnu.org>
 ;; Keywords: minibuffer completion
 ;; Package-Requires: ((emacs "27.1"))
-;; Version: 1.5
+;; Version: 1.6
 
 ;; This file is part of GNU Emacs.
 
@@ -61,7 +61,8 @@
 ;; (defun th/vertico-complete ()
 ;;   (interactive)
 ;;   (minibuffer-complete)
-;;   (vertico--exhibit))
+;;   (when vertico--count-ov ;; Only if vertico is active.
+;;     (vertico--exhibit)))
 ;;
 ;; Use that for auto-completion.
 ;;
