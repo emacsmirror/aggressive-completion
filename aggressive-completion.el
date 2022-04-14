@@ -146,14 +146,18 @@ Ivy, Selectrum, or Vertico."
                     (minibuffer-completion-help)))
               ;; Only show the completion help.  This slightly awkward
               ;; condition ensures we still can repeatedly hit TAB to scroll
-              ;; through the list of completions.
+              ;; through the list of completions or scroll the list using
+              ;; scroll commands without having it bump back.
               (when (and aggressive-completion-auto-completion-help
                          (not
                           (and
                            (memq last-command
                                  (cons aggressive-completion-auto-complete-fn
                                        '(completion-at-point
-                                         minibuffer-complete)))
+                                         minibuffer-complete
+                                         scroll-other-window
+                                         mwheel-scroll
+                                         pixel-scroll-precision)))
                            (window-live-p
                             (get-buffer-window "*Completions*"))
                            (with-current-buffer "*Completions*"
