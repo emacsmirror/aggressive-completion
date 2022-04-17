@@ -6,7 +6,7 @@
 ;; Maintainer: Tassilo Horn <tsdh@gnu.org>
 ;; Keywords: minibuffer completion
 ;; Package-Requires: ((emacs "27.1"))
-;; Version: 1.6
+;; Version: 1.7
 
 ;; This file is part of GNU Emacs.
 
@@ -115,67 +115,66 @@ Ivy, Selectrum, or Vertico."
 
 (defvar aggressive-completion--timer nil)
 
+(defvar aggressive-completion--minibuffer-tick nil)
+
+(defun aggressive-completion--get-minibuffer-tick ()
+  "Return the current state of the minibuffer."
+  (when (minibufferp)
+    (cons (point) (buffer-modified-tick))))
+
 (defun aggressive-completion--do ()
   "Perform aggressive completion."
-  (when (window-minibuffer-p)
-    (let* ((completions (completion-all-sorted-completions))
-           ;; Don't ding if there are no completions, etc.
-           (visible-bell nil)
-           (ring-bell-function #'ignore)
-           ;; Automatic completion should not cycle.
-           (completion-cycle-threshold nil)
-           (completion-cycling nil))
-      (let ((i 0))
-        (while (and (<= i aggressive-completion-max-shown-completions)
-                    (consp completions))
-          (setq completions (cdr completions))
-          (cl-incf i))
-        (if (and (> i 0)
-                 (< i aggressive-completion-max-shown-completions))
-            (if (and aggressive-completion-auto-complete
-                     (memq last-command
-                           aggressive-completion-auto-complete-commands))
-                ;; Perform automatic completion.
-                (progn
-                  (let ((completion-auto-help
-                         aggressive-completion-auto-completion-help))
-                    (funcall aggressive-completion-auto-complete-fn))
-                  (when (and aggressive-completion-auto-completion-help
-                             (not (window-live-p
-                                   (get-buffer-window "*Completions*"))))
-                    (minibuffer-completion-help)))
-              ;; Only show the completion help.  This slightly awkward
-              ;; condition ensures we still can repeatedly hit TAB to scroll
-              ;; through the list of completions or scroll the list using
-              ;; scroll commands without having it bump back.
-              (when (and aggressive-completion-auto-completion-help
-                         (not
-                          (and
-                           (memq last-command
+  (let ((tick (aggressive-completion--get-minibuffer-tick)))
+    (when (and (window-minibuffer-p)
+               (not (equal aggressive-completion--minibuffer-tick
+                           tick)))
+      (setq aggressive-completion--minibuffer-tick tick)
+      (let* ((completions (completion-all-sorted-completions))
+             ;; Don't ding if there are no completions, etc.
+             (visible-bell nil)
+             (ring-bell-function #'ignore)
+             ;; Automatic completion should not cycle.
+             (completion-cycle-threshold nil)
+             (completion-cycling nil))
+        (let ((i 0))
+          (while (and (<= i aggressive-completion-max-shown-completions)
+                      (consp completions))
+            (setq completions (cdr completions))
+            (cl-incf i))
+          (if (and (> i 0)
+                   (<= i aggressive-completion-max-shown-completions))
+              (if (and aggressive-completion-auto-complete
+                       (memq last-command
+                             aggressive-completion-auto-complete-commands))
+                  ;; Perform automatic completion.
+                  (progn
+                    (let ((completion-auto-help
+                           aggressive-completion-auto-completion-help))
+                      (funcall aggressive-completion-auto-complete-fn))
+                    (when (and aggressive-completion-auto-completion-help
+                               (not (window-live-p
+                                     (get-buffer-window "*Completions*"))))
+                      (minibuffer-completion-help)))
+                ;; Only show the completion help.
+                (when aggressive-completion-auto-completion-help
+                  (minibuffer-completion-help)))
+            ;; Close the *Completions* buffer if there are too many
+            ;; or zero completions.
+            (when-let ((win (get-buffer-window "*Completions*")))
+              (when (and
+                     (window-live-p win)
+                     (or
+                      ;; With zero completions, we can always close.
+                      (zerop i)
+                      ;; When we've requested completion help via hitting
+                      ;; TAB twice explicitly, it shouldn't be closed
+                      ;; forcefully here.
+                      (not (memq last-command
                                  (cons aggressive-completion-auto-complete-fn
-                                       '(completion-at-point
+                                       '(minibuffer-completion-help
                                          minibuffer-complete
-                                         scroll-other-window
-                                         mwheel-scroll
-                                         pixel-scroll-precision)))
-                           (window-live-p
-                            (get-buffer-window "*Completions*"))
-                           (with-current-buffer "*Completions*"
-                             (> (point) (point-min))))))
-                (minibuffer-completion-help)))
-          ;; Close the *Completions* buffer if there are too many
-          ;; or zero completions.
-          (when-let ((win (get-buffer-window "*Completions*")))
-            (when (and (window-live-p win)
-                       ;; When we've requested completion help via hitting TAB
-                       ;; twice explicitly, it shouldn't be closed forcefully
-                       ;; here.
-                       (not (memq last-command
-                                  (cons aggressive-completion-auto-complete-fn
-                                        '(minibuffer-completion-help
-                                          minibuffer-complete
-                                          completion-at-point)))))
-              (quit-window nil win))))))))
+                                         completion-at-point))))))
+                (quit-window nil win)))))))))
 
 (defun aggressive-completion--timer-restart ()
   "Restart `aggressive-completion--timer'."
